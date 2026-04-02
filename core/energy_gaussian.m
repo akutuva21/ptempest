@@ -27,7 +27,11 @@ else
 end
 
 % simulate experiments
-for d = 1:cfg.nexpt
+parworkers = 0;
+if isfield(cfg, 'parallel') && cfg.parallel
+    parworkers = 1024;
+end
+parfor (d = 1:cfg.nexpt, parworkers)
 
     % simulate experiment (default initial conditions)
     [err,~,obsv] = cfg.data{d}.protocol_fcn( cfg.data{d}.time, init, params );

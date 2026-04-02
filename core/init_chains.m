@@ -25,19 +25,29 @@ fprintf(1,'------------------------------------------------------\n');
 fprintf(1,'Initializing chains...\n');
 params_curr = zeros(cfg.nchains,cfg.nparams);
 energy_curr = zeros(cfg.nchains,1);
-for chain_idx = 1 : cfg.nchains
+parworkers = 0;
+if isfield(cfg, 'parallel') && cfg.parallel
+    parworkers = min( [cfg.maxlabs, cfg.nchains] );
+end
+parfor (chain_idx = 1 : cfg.nchains, parworkers)
     fprintf(1,'chain %d . . .  ', chain_idx );
-    energy_curr(chain_idx) = Inf;
+
+    tmp_energy = Inf;
+    tmp_params = zeros(1, cfg.nparams);
+
     for counter = 1 : cfg.max_init_steps
         params = cfg.proposal_fcn( params_init, epsilon(chain_idx,:) ); 
         energy = cfg.energy_fcn( params );
-        if ( energy < energy_curr(chain_idx) )
-            params_curr(chain_idx,:) = params; 
-            energy_curr(chain_idx) = energy;
+        if ( energy < tmp_energy )
+            tmp_params = params;
+            tmp_energy = energy;
         end
-        if ( energy_curr(chain_idx) < cfg.energy_init_max )
+        if ( tmp_energy < cfg.energy_init_max )
             break;
         end            
     end
-    fprintf(1,'initial energy = %g\n', energy_curr(chain_idx) );
+
+    params_curr(chain_idx,:) = tmp_params;
+    energy_curr(chain_idx) = tmp_energy;
+    fprintf(1,'initial energy = %g\n', tmp_energy );
 end
