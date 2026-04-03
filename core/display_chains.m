@@ -14,10 +14,7 @@ if (swap_idx > 0)
     for chain_idx = 1:cfg.nchains-1
         accepts = sum(swap_acceptance(chain_idx,1:swap_idx) == 1);
         attempts = sum(swap_acceptance(chain_idx,1:swap_idx) ~= 0);
-        rate = 0;
-        if attempts > 0
-            rate = accepts / attempts;
-        end
+        rate = accepts / max(attempts, 1);
         fprintf(1,'    %d <-> %d = %-8.3f\n', ...
             chain_idx, chain_idx+1, rate );
     end

@@ -6,14 +6,7 @@ fprintf(1,' Adapting chain temperatures . . .\n');
 recent_swaps = swap_acceptance(:,(swap_idx-cfg.adapt_beta_interval+1):swap_idx);
 acceptances = sum( recent_swaps == 1, 2 );
 attempts = sum( recent_swaps ~= 0, 2 );
-swap_acceptance_rate = zeros(size(acceptances));
-for chain_idx = 1:length(acceptances)
-    if attempts(chain_idx) > 0
-        swap_acceptance_rate(chain_idx) = acceptances(chain_idx) / attempts(chain_idx);
-    else
-        swap_acceptance_rate(chain_idx) = 0;
-    end
-end
+swap_acceptance_rate = acceptances ./ max(attempts, 1);
 old_beta = beta;
 % chain 1 has fixed temperature. adjust chains in order of coolest to hottest.
 %   whenever a temperature changes, we proportionally increase the temperature of the hotter chains as well
