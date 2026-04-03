@@ -258,6 +258,9 @@ for swap_idx = start_swap : cfg.nswaps
         c1 = chain_idx;
         c2 = chain_idx + 1;
 
+        % Mark that a swap was attempted (using -1 to track attempts while 1 means accepted)
+        swap_acceptance(c1, swap_idx) = -1;
+
         % Difference.
         delta_energy = energy_curr(c2, 1) - energy_curr(c1, 1);
         delta_beta = beta(c2) - beta(c1);

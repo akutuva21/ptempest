@@ -11,9 +11,6 @@ if isinf(logprior)
 end
 energy = -logprior;
 
-% start integration timer
-simtimer = tic;
-
 % equillibrate, if required
 if isfield(cfg, 'equilibrate_fcn')
     [err,state,~] = cfg.equilibrate_fcn( params );
