@@ -198,7 +198,10 @@ if (cfg.parallel)
     % start labs
     nlabs = min( [cfg.maxlabs, cfg.nchains] );
     fprintf(1,'[ nlabs=%d ]\n', nlabs );
-    matlabpool( 'local', nlabs );
+    poolobj = gcp('nocreate');
+    if isempty(poolobj)
+        parpool( 'local', nlabs );
+    end
     spmd
         % initialize random number stream for each lab
 	    RandStream.setGlobalStream( labstreams{labindex} );
@@ -247,24 +250,32 @@ for swap_idx = start_swap : cfg.nswaps
     end  % loop over chains
     
 
-    % Try to Swap Chains (highest temperature to lowest temperature)
-    for chain_idx = cfg.nchains : -1 : 2
+    % Try to Swap Chains (randomized even-odd pairs)
+    start_chain_idx = 1 + randi([0, 1]); % randomly start with 1 or 2
+    for chain_idx = start_chain_idx : 2 : (cfg.nchains - 1)
         
+        % chains to swap
+        c1 = chain_idx;
+        c2 = chain_idx + 1;
+
+        % Mark that a swap was attempted (using -1 to track attempts while 1 means accepted)
+        swap_acceptance(c1, swap_idx) = -1;
+
         % Difference.
-        delta_energy = energy_curr(chain_idx, 1) - energy_curr(chain_idx-1,1);
-        delta_beta = beta(chain_idx) - beta(chain_idx-1);
+        delta_energy = energy_curr(c2, 1) - energy_curr(c1, 1);
+        delta_beta = beta(c2) - beta(c1);
         
         if ( delta_beta*delta_energy > log(rand(1)) )
             % swap chains . . .
-            energy_tmp = energy_curr(chain_idx-1, 1);
-            params_tmp = params_curr(chain_idx-1, :);
+            energy_tmp = energy_curr(c1, 1);
+            params_tmp = params_curr(c1, :);
             
-            energy_curr(chain_idx-1, 1) = energy_curr(chain_idx, 1);
-            energy_curr(chain_idx, 1)   = energy_tmp;
+            energy_curr(c1, 1) = energy_curr(c2, 1);
+            energy_curr(c2, 1) = energy_tmp;
             
-            params_curr(chain_idx-1,:) = params_curr(chain_idx, :);
-            params_curr(chain_idx,:) = params_tmp;
-            swap_acceptance(chain_idx-1,swap_idx) = 1;
+            params_curr(c1, :) = params_curr(c2, :);
+            params_curr(c2, :) = params_tmp;
+            swap_acceptance(c1, swap_idx) = 1;
         end
     end
 
@@ -331,7 +342,7 @@ save_init( cfg, params_chain, energy_chain, beta_history, relstep_history );
 % ---- close processor pool -------------------------------------------
 fprintf(1,'------------------------------------------------------\n');
 if (cfg.parallel)
-    matlabpool close;
+    delete(gcp('nocreate'));
 end
 
 
